@@ -195,7 +195,7 @@ public class SchoolApp extends JFrame {
 
         heading.setFont(new Font("Segoe UI", Font.BOLD, 28));
 
-        JPanel buttons = new JPanel(new GridLayout(7, 1, 15, 15));   
+        JPanel buttons = new JPanel(new GridLayout(8, 1, 15, 15));   
 
         JButton students = new JButton("Manage Students");
         JButton logout = new JButton("Logout");
@@ -270,6 +270,15 @@ teachers.addActionListener(e -> {
 		buttons.add(results);
 		buttons.add(attendance);
 		buttons.add(payments);
+		JButton reports = new JButton("View Reports");
+
+        reports.addActionListener(e -> {
+            if (authenticated) {
+                new ReportsManagementDialog(this);
+            }
+        });
+
+        buttons.add(reports); 
         buttons.add(logout); 
 
         panel.add(heading, BorderLayout.NORTH);
