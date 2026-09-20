@@ -195,14 +195,23 @@ public class SchoolApp extends JFrame {
 
         heading.setFont(new Font("Segoe UI", Font.BOLD, 28));
 
-        JPanel buttons = new JPanel(new GridLayout(2, 1, 15, 15));
+        JPanel buttons = new JPanel(new GridLayout(3, 1, 15, 15)); 
 
         JButton students = new JButton("Manage Students");
         JButton logout = new JButton("Logout");
+		JButton teachers = new JButton("Manage Teachers");
+
+teachers.addActionListener(e -> {
+
+    if (authenticated) {
+        new TeacherManagementDialog(this);
+    }
+
+}); 
 
         students.addActionListener(e -> {
 
-            if (authenticated) {
+            if (authenticated) { 
                 refreshStudents();
                 cards.show(mainPanel, "STUDENTS");
             }
@@ -219,7 +228,8 @@ public class SchoolApp extends JFrame {
         });
 
         buttons.add(students);
-        buttons.add(logout);
+		buttons.add(teachers); 
+        buttons.add(logout); 
 
         panel.add(heading, BorderLayout.NORTH);
         panel.add(buttons, BorderLayout.CENTER);
@@ -542,7 +552,7 @@ public class SchoolApp extends JFrame {
             "Error",
             JOptionPane.ERROR_MESSAGE
         );
-    }
+    } 
 
     public static void main(String[] args) {
 
