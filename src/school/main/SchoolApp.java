@@ -2,6 +2,7 @@ package school.main;
 
 import school.service.AuthService;
 import school.service.StudentDatabase;
+import school.service.RoleAuthService; 
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -27,7 +28,8 @@ public class SchoolApp extends JFrame {
     private DefaultTableModel tableModel;
     private JTable studentTable;
 
-    private boolean authenticated = false;
+    private boolean authenticated = false; 
+	private RoleAuthService.Session currentSession; 
 
     public SchoolApp() {
 
@@ -147,38 +149,57 @@ public class SchoolApp extends JFrame {
 
     private void login() {
 
-        char[] password = passwordField.getPassword();
+    char[] password = passwordField.getPassword();
 
-        try {
+    try {
 
-            boolean valid = AuthService.login(
+        RoleAuthService.Session session =
+            RoleAuthService.login(
                 usernameField.getText().trim(),
                 password
             );
 
-            if (valid) {
+        if (session == null) {
 
-                authenticated = true;
+            JOptionPane.showMessageDialog(
+                this,
+                "Invalid username or password."
+            );
 
-                passwordField.setText("");
-
-                cards.show(mainPanel, "DASHBOARD");
-
-            } else {
-
-                JOptionPane.showMessageDialog(
-                    this,
-                    "Invalid administrator credentials."
-                );
-            }
-
-        } catch (Exception e) {
-            showError(e);
-
-        } finally {
-            Arrays.fill(password, '\0');
+            return;
         }
+
+        currentSession = session;
+        passwordField.setText("");
+
+        if (session.isAdmin()) {
+
+            authenticated = true;
+            cards.show(mainPanel, "DASHBOARD");
+
+        } else {
+
+            authenticated = false;
+			currentSession = null;
+
+            new RoleHomeDialog(this, session);
+
+            currentSession = null;
+
+            usernameField.setText("");
+            passwordField.setText("");
+        }
+
+    } catch (Exception e) {
+
+        showError(e);
+
+    } finally {
+
+        Arrays.fill(password, '\0');
     }
+} 
+
 
     private JPanel createDashboard() {
 
@@ -195,7 +216,7 @@ public class SchoolApp extends JFrame {
 
         heading.setFont(new Font("Segoe UI", Font.BOLD, 28));
 
-        JPanel buttons = new JPanel(new GridLayout(8, 1, 15, 15));   
+        JPanel buttons = new JPanel(new GridLayout(9, 1, 15, 15));   
 
         JButton students = new JButton("Manage Students");
         JButton logout = new JButton("Logout");
@@ -263,7 +284,18 @@ teachers.addActionListener(e -> {
 
             cards.show(mainPanel, "LOGIN");
         });
+        JButton accounts = new JButton("Manage Accounts");
 
+        accounts.addActionListener(e -> {
+
+            if (authenticated &&
+                currentSession != null &&
+                 currentSession.isAdmin()) {
+
+                new AccountManagementDialog(this, currentSession);
+            }
+
+        }); 
         buttons.add(students);
 		buttons.add(teachers); 
 		buttons.add(courses); 
@@ -278,7 +310,8 @@ teachers.addActionListener(e -> {
             }
         });
 
-        buttons.add(reports); 
+        buttons.add(reports);
+        buttons.add(accounts); 		
         buttons.add(logout); 
 
         panel.add(heading, BorderLayout.NORTH);
