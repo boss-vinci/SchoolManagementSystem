@@ -9,29 +9,51 @@ public class TeacherDatabase {
             String lastName, String email,
             int departmentId) throws SQLException {
 
-        String sql = """
-            INSERT INTO teachers
-            (teacher_id, first_name, last_name,
-             email, department_id)
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(teacher_id) DO NOTHING
-            """;
+        try (Connection connection = StudentDatabase.connect()) {
 
-        try (Connection connection = StudentDatabase.connect();
-             PreparedStatement statement =
-                 connection.prepareStatement(sql)) {
+            String check = """
+                SELECT 1 FROM teachers
+                WHERE teacher_id = ?
+                """;
 
-            statement.setString(1, id);
-            statement.setString(2, firstName);
-            statement.setString(3, lastName);
-            statement.setString(4, email);
-            statement.setInt(5, departmentId);
+            try (PreparedStatement statement =
+                     connection.prepareStatement(check)) {
 
-            int rows = statement.executeUpdate();
+                statement.setString(1, id);
 
-            System.out.println(rows > 0
-                ? "Teacher registered successfully."
-                : "Teacher already exists.");
+                try (ResultSet result = statement.executeQuery()) {
+                    if (result.next()) {
+                        System.out.println("Teacher already exists.");
+                        return;
+                    }
+                }
+            }
+
+            String sql = """
+                INSERT INTO teachers
+                (teacher_id, first_name, last_name,
+                 email, department_id)
+                VALUES (?, ?, ?, ?, ?)
+                """;
+
+            try (PreparedStatement statement =
+                     connection.prepareStatement(sql)) {
+
+                statement.setString(1, id);
+                statement.setString(2, firstName);
+                statement.setString(3, lastName);
+
+                if (email == null || email.isBlank()) {
+                    statement.setNull(4, Types.VARCHAR);
+                } else {
+                    statement.setString(4, email);
+                }
+
+                statement.setInt(5, departmentId);
+                statement.executeUpdate();
+
+                System.out.println("Teacher registered successfully.");
+            }
         }
     }
 
@@ -152,4 +174,4 @@ public class TeacherDatabase {
             );
         }
     }
-} 
+}

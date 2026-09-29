@@ -33,3 +33,6 @@ replay_pid*
 *.sqlite3
 .env
 *.log 
+# H2 database files
+*.mv.db
+*.trace.db

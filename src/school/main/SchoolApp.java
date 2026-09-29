@@ -180,7 +180,6 @@ public class SchoolApp extends JFrame {
         } else {
 
             authenticated = false;
-			currentSession = null;
 
             new RoleHomeDialog(this, session);
 
@@ -278,6 +277,7 @@ teachers.addActionListener(e -> {
         logout.addActionListener(e -> {
 
             authenticated = false;
+            currentSession = null;
 
             usernameField.setText("");
             passwordField.setText("");

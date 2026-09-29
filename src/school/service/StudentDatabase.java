@@ -1,51 +1,73 @@
 package school.service;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.*;
 
 public class StudentDatabase {
 
-    private static final String URL = "jdbc:sqlite:data/school.db";
+    private static final String URL =
+        "jdbc:h2:./data/school;DATABASE_TO_LOWER=TRUE";
+    private static final String USER = "sa";
+    private static final String PASSWORD = "";
 
     public static Connection connect() throws SQLException {
-        Connection connection = DriverManager.getConnection(URL);
-
-        try (Statement statement = connection.createStatement()) {
-            statement.execute("PRAGMA foreign_keys = ON");
+        try {
+            Files.createDirectories(Path.of("data"));
+        } catch (Exception e) {
+            throw new SQLException("Could not create data folder.", e);
         }
 
-        return connection;
+        return DriverManager.getConnection(URL, USER, PASSWORD);
     }
 
     public static int addDepartment(String name) throws SQLException {
 
+        String departmentName = name == null ? "" : name.trim();
+
+        if (departmentName.isEmpty()) {
+            throw new IllegalArgumentException(
+                "Department name cannot be empty."
+            );
+        }
+
         try (Connection connection = connect()) {
 
-            String insert = """
-                INSERT OR IGNORE INTO departments
-                (department_name) VALUES (?)
-                """;
-
-            try (PreparedStatement statement =
-                     connection.prepareStatement(insert)) {
-
-                statement.setString(1, name);
-                statement.executeUpdate();
-            }
-
             String search = """
-                SELECT department_id FROM departments
+                SELECT department_id
+                FROM departments
                 WHERE department_name = ?
                 """;
 
             try (PreparedStatement statement =
                      connection.prepareStatement(search)) {
 
-                statement.setString(1, name);
+                statement.setString(1, departmentName);
 
                 try (ResultSet result = statement.executeQuery()) {
-
                     if (result.next()) {
                         return result.getInt("department_id");
+                    }
+                }
+            }
+
+            String insert = """
+                INSERT INTO departments (department_name)
+                VALUES (?)
+                """;
+
+            try (PreparedStatement statement =
+                     connection.prepareStatement(
+                         insert,
+                         Statement.RETURN_GENERATED_KEYS
+                     )) {
+
+                statement.setString(1, departmentName);
+                statement.executeUpdate();
+
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (keys.next()) {
+                        return keys.getInt(1);
                     }
                 }
             }
@@ -62,31 +84,51 @@ public class StudentDatabase {
             int departmentId,
             int level) throws SQLException {
 
-        String sql = """
-            INSERT INTO students
-            (student_id, first_name, last_name,
-             email, department_id, level)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(student_id) DO NOTHING
-            """;
+        try (Connection connection = connect()) {
 
-        try (Connection connection = connect();
-             PreparedStatement statement =
-                 connection.prepareStatement(sql)) {
+            String check = """
+                SELECT 1 FROM students
+                WHERE student_id = ?
+                """;
 
-            statement.setString(1, id);
-            statement.setString(2, firstName);
-            statement.setString(3, lastName);
-            statement.setString(4, email);
-            statement.setInt(5, departmentId);
-            statement.setInt(6, level);
+            try (PreparedStatement statement =
+                     connection.prepareStatement(check)) {
 
-            int rows = statement.executeUpdate();
+                statement.setString(1, id);
 
-            if (rows > 0) {
+                try (ResultSet result = statement.executeQuery()) {
+                    if (result.next()) {
+                        System.out.println("Student ID already exists.");
+                        return;
+                    }
+                }
+            }
+
+            String sql = """
+                INSERT INTO students
+                (student_id, first_name, last_name,
+                 email, department_id, level)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """;
+
+            try (PreparedStatement statement =
+                     connection.prepareStatement(sql)) {
+
+                statement.setString(1, id);
+                statement.setString(2, firstName);
+                statement.setString(3, lastName);
+
+                if (email == null || email.isBlank()) {
+                    statement.setNull(4, Types.VARCHAR);
+                } else {
+                    statement.setString(4, email);
+                }
+
+                statement.setInt(5, departmentId);
+                statement.setInt(6, level);
+                statement.executeUpdate();
+
                 System.out.println("Student registered successfully.");
-            } else {
-                System.out.println("Student ID already exists.");
             }
         }
     }
@@ -235,4 +277,4 @@ public class StudentDatabase {
             System.out.println("Database error: " + e.getMessage());
         }
     }
-} 
+}

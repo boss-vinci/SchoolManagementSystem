@@ -13,8 +13,8 @@ public class RoleDatabaseSetup {
         String sql = """
             CREATE TABLE IF NOT EXISTS account_profiles (
                 user_id INTEGER PRIMARY KEY,
-                student_id TEXT UNIQUE,
-                teacher_id TEXT UNIQUE,
+                student_id VARCHAR(50) UNIQUE,
+                teacher_id VARCHAR(50) UNIQUE,
 
                 FOREIGN KEY (user_id)
                 REFERENCES users(user_id)

@@ -373,36 +373,49 @@ public class CourseManagementDialog extends JDialog {
             return;
         }
 
-        String sql = """
-            INSERT INTO enrollments
-            (student_id, course_id)
-            VALUES (?, ?)
-            ON CONFLICT(student_id, course_id) DO NOTHING
-            """;
+        try (Connection connection = StudentDatabase.connect()) {
 
-        try (Connection connection = StudentDatabase.connect();
-             PreparedStatement statement =
-                 connection.prepareStatement(sql)) {
+            String check = """
+                SELECT 1 FROM enrollments
+                WHERE student_id = ?
+                AND course_id = ?
+                """;
 
-            statement.setString(1, studentId);
-            statement.setString(2, courseId);
+            try (PreparedStatement statement =
+                     connection.prepareStatement(check)) {
 
-            int rows = statement.executeUpdate();
+                statement.setString(1, studentId);
+                statement.setString(2, courseId);
 
-            if (rows > 0) {
-
-                JOptionPane.showMessageDialog(
-                    this,
-                    "Student enrolled successfully."
-                );
-
-            } else {
-
-                JOptionPane.showMessageDialog(
-                    this,
-                    "Student is already enrolled."
-                );
+                try (ResultSet result = statement.executeQuery()) {
+                    if (result.next()) {
+                        JOptionPane.showMessageDialog(
+                            this,
+                            "Student is already enrolled."
+                        );
+                        return;
+                    }
+                }
             }
+
+            String sql = """
+                INSERT INTO enrollments
+                (student_id, course_id)
+                VALUES (?, ?)
+                """;
+
+            try (PreparedStatement statement =
+                     connection.prepareStatement(sql)) {
+
+                statement.setString(1, studentId);
+                statement.setString(2, courseId);
+                statement.executeUpdate();
+            }
+
+            JOptionPane.showMessageDialog(
+                this,
+                "Student enrolled successfully."
+            );
 
             refreshEnrollments();
 

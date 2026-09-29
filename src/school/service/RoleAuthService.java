@@ -268,24 +268,29 @@ public class RoleAuthService {
                     VALUES (?, ?, ?)
                     """;
 
+                int userId;
+
                 try (PreparedStatement statement =
-                         connection.prepareStatement(insert)) {
+                         connection.prepareStatement(
+                             insert,
+                             Statement.RETURN_GENERATED_KEYS
+                         )) {
 
                     statement.setString(1, username);
                     statement.setString(2, storedHash);
                     statement.setString(3, role);
 
                     statement.executeUpdate();
-                }
 
-                int userId;
+                    try (ResultSet keys = statement.getGeneratedKeys()) {
+                        if (!keys.next()) {
+                            throw new SQLException(
+                                "Could not retrieve the new user ID."
+                            );
+                        }
 
-                try (Statement statement = connection.createStatement();
-                     ResultSet result =
-                         statement.executeQuery("SELECT last_insert_rowid()")) {
-
-                    result.next();
-                    userId = result.getInt(1);
+                        userId = keys.getInt(1);
+                    }
                 }
 
                 String profileSql = """
