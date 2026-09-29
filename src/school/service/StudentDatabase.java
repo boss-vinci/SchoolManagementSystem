@@ -6,10 +6,14 @@ import java.sql.*;
 
 public class StudentDatabase {
 
-    private static final String URL =
+    private static final String DEFAULT_URL =
         "jdbc:h2:./data/school;DATABASE_TO_LOWER=TRUE";
     private static final String USER = "sa";
     private static final String PASSWORD = "";
+
+    private static String databaseUrl() {
+        return System.getProperty("school.db.url", DEFAULT_URL);
+    }
 
     public static Connection connect() throws SQLException {
         try {
@@ -18,7 +22,7 @@ public class StudentDatabase {
             throw new SQLException("Could not create data folder.", e);
         }
 
-        return DriverManager.getConnection(URL, USER, PASSWORD);
+        return DriverManager.getConnection(databaseUrl(), USER, PASSWORD);
     }
 
     public static int addDepartment(String name) throws SQLException {
