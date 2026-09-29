@@ -1,14 +1,14 @@
 package school.main;
 
+import school.controller.StudentController;
+import school.model.StudentRecord;
 import school.service.AuthService;
-import school.service.StudentDatabase;
 import school.service.RoleAuthService;
 import school.util.AppLogger;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.sql.*;
 import java.util.Arrays;
 
 public class SchoolApp extends JFrame {
@@ -28,6 +28,8 @@ public class SchoolApp extends JFrame {
 
     private DefaultTableModel tableModel;
     private JTable studentTable;
+    private final StudentController studentController =
+        StudentController.createDefault();
 
     private boolean authenticated = false; 
 	private RoleAuthService.Session currentSession; 
@@ -356,6 +358,14 @@ teachers.addActionListener(e -> {
         });
         buttons.add(systemLogs);
 
+        JButton architecture = new JButton("System Architecture");
+        architecture.addActionListener(e -> {
+            if (authenticated && currentSession != null && currentSession.isAdmin()) {
+                new DesignPatternsDialog(this);
+            }
+        });
+        buttons.add(architecture);
+
         buttons.add(logout); 
 
         panel.add(heading, BorderLayout.NORTH);
@@ -461,65 +471,16 @@ teachers.addActionListener(e -> {
 
         if (!authenticated) return;
 
-        String id = idField.getText().trim();
-        String first = firstNameField.getText().trim();
-        String last = lastNameField.getText().trim();
-        String email = emailField.getText().trim();
-        String department = departmentField.getText().trim();
-
         try {
+            int level = Integer.parseInt(levelField.getText().trim());
 
-            if (id.isEmpty() || first.isEmpty() ||
-                last.isEmpty() || department.isEmpty()) {
-
-                throw new IllegalArgumentException(
-                    "Complete all required student fields."
-                );
-            }
-
-            int level = Integer.parseInt(
-                levelField.getText().trim()
-            );
-
-            if (level < 100 || level > 500 || level % 100 != 0) {
-                throw new IllegalArgumentException(
-                    "Level must be 100, 200, 300, 400 or 500."
-                );
-            }
-
-            int departmentId =
-                StudentDatabase.addDepartment(department);
-
-            String sql = """
-                INSERT INTO students
-                (student_id, first_name, last_name,
-                 email, department_id, level)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """;
-
-            try (Connection connection = StudentDatabase.connect();
-                 PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
-
-                statement.setString(1, id);
-                statement.setString(2, first);
-                statement.setString(3, last);
-
-                if (email.isEmpty()) {
-                    statement.setNull(4, Types.VARCHAR);
-                } else {
-                    statement.setString(4, email);
-                }
-
-                statement.setInt(5, departmentId);
-                statement.setInt(6, level);
-
-                statement.executeUpdate();
-            }
-
-            AppLogger.info(
-                "STUDENT_REGISTERED",
-                "Student registered: " + id
+            studentController.registerStudent(
+                idField.getText(),
+                firstNameField.getText(),
+                lastNameField.getText(),
+                emailField.getText(),
+                departmentField.getText(),
+                level
             );
 
             JOptionPane.showMessageDialog(
@@ -538,36 +499,21 @@ teachers.addActionListener(e -> {
 
         if (!authenticated) return;
 
-        String sql = """
-            SELECT s.student_id, s.first_name, s.last_name,
-                   s.email, d.department_name, s.level
-            FROM students s
-            LEFT JOIN departments d
-            ON s.department_id = d.department_id
-            ORDER BY s.student_id
-            """;
-
-        try (Connection connection = StudentDatabase.connect();
-             PreparedStatement statement =
-                 connection.prepareStatement(sql);
-             ResultSet result = statement.executeQuery()) {
-
+        try {
             tableModel.setRowCount(0);
 
-            while (result.next()) {
-
+            for (StudentRecord student : studentController.getStudents()) {
                 tableModel.addRow(new Object[] {
-
-                    result.getString("student_id"),
-                    result.getString("first_name"),
-                    result.getString("last_name"),
-                    result.getString("email"),
-                    result.getString("department_name"),
-                    result.getInt("level")
+                    student.getStudentId(),
+                    student.getFirstName(),
+                    student.getLastName(),
+                    student.getEmail(),
+                    student.getDepartment(),
+                    student.getLevel()
                 });
             }
 
-        } catch (SQLException e) {
+        } catch (Exception e) {
             showError(e);
         }
     }
@@ -577,12 +523,9 @@ teachers.addActionListener(e -> {
         if (!authenticated) return;
 
         int row = selectedRow();
-
         if (row == -1) return;
 
-        String id = tableModel.getValueAt(
-            row, 0
-        ).toString();
+        String id = tableModel.getValueAt(row, 0).toString();
 
         String input = JOptionPane.showInputDialog(
             this,
@@ -592,30 +535,8 @@ teachers.addActionListener(e -> {
         if (input == null) return;
 
         try {
-
             int level = Integer.parseInt(input.trim());
-
-            if (level < 100 || level > 500 || level % 100 != 0) {
-                throw new IllegalArgumentException(
-                    "Invalid student level."
-                );
-            }
-
-            String sql = """
-                UPDATE students
-                SET level = ?
-                WHERE student_id = ?
-                """;
-
-            try (Connection connection = StudentDatabase.connect();
-                 PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
-
-                statement.setInt(1, level);
-                statement.setString(2, id);
-
-                statement.executeUpdate();
-            }
+            studentController.updateStudentLevel(id, level);
 
             refreshStudents();
 
@@ -634,12 +555,9 @@ teachers.addActionListener(e -> {
         if (!authenticated) return;
 
         int row = selectedRow();
-
         if (row == -1) return;
 
-        String id = tableModel.getValueAt(
-            row, 0
-        ).toString();
+        String id = tableModel.getValueAt(row, 0).toString();
 
         int confirm = JOptionPane.showConfirmDialog(
             this,
@@ -651,32 +569,15 @@ teachers.addActionListener(e -> {
         if (confirm != JOptionPane.YES_OPTION) return;
 
         try {
-
-            String sql =
-                "DELETE FROM students WHERE student_id = ?";
-
-            try (Connection connection = StudentDatabase.connect();
-                 PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
-
-                statement.setString(1, id);
-
-                statement.executeUpdate();
-            }
-
+            studentController.deleteStudent(id);
             refreshStudents();
-
-            AppLogger.info(
-                "STUDENT_DELETED",
-                "Student deleted: " + id
-            );
 
             JOptionPane.showMessageDialog(
                 this,
                 "Student deleted successfully."
             );
 
-        } catch (SQLException e) {
+        } catch (Exception e) {
             showError(e);
         }
     }

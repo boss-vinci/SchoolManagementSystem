@@ -1,5 +1,7 @@
 package school.service;
 
+import school.factory.UserFactory;
+import school.model.user.SystemUser;
 import school.util.AppLogger;
 
 import java.sql.*;
@@ -15,30 +17,26 @@ public class RoleAuthService {
 
     public static final class Session {
 
-        private final String username;
-        private final String role;
-        private final String profileId;
+        private final SystemUser user;
 
-        private Session(String username, String role, String profileId) {
-            this.username = username;
-            this.role = role;
-            this.profileId = profileId;
+        private Session(SystemUser user) {
+            this.user = user;
         }
 
         public String getUsername() {
-            return username;
+            return user.getUsername();
         }
 
         public String getRole() {
-            return role;
+            return user.getRole();
         }
 
         public String getProfileId() {
-            return profileId;
+            return user.getProfileId();
         }
 
         public boolean isAdmin() {
-            return role.equals("ADMIN");
+            return user.getRole().equals("ADMIN");
         }
     }
 
@@ -170,11 +168,13 @@ public class RoleAuthService {
                     return invalidLogin(username);
                 }
 
-                Session session = new Session(
+                SystemUser user = UserFactory.create(
                     result.getString("username"),
                     role,
                     profileId
                 );
+
+                Session session = new Session(user);
 
                 AppLogger.info(
                     "LOGIN",

@@ -1,40 +1,15 @@
 package school.service;
 
 import school.util.AppLogger;
+import school.util.DatabaseManager;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.*;
 
 public class StudentDatabase {
 
-    private static final String DEFAULT_URL =
-        "jdbc:h2:./data/school;DATABASE_TO_LOWER=TRUE";
-    private static final String USER = "sa";
-    private static final String PASSWORD = "";
-
-    private static String databaseUrl() {
-        return System.getProperty("school.db.url", DEFAULT_URL);
-    }
-
     public static Connection connect() throws SQLException {
         try {
-            Files.createDirectories(Path.of("data"));
-        } catch (Exception e) {
-            AppLogger.error(
-                "DATABASE_ERROR",
-                "Could not create the data folder.",
-                e
-            );
-            throw new SQLException("Could not create data folder.", e);
-        }
-
-        try {
-            return DriverManager.getConnection(
-                databaseUrl(),
-                USER,
-                PASSWORD
-            );
+            return DatabaseManager.getInstance().getConnection();
         } catch (SQLException e) {
             AppLogger.error(
                 "DATABASE_ERROR",
