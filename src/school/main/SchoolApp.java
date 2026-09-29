@@ -215,7 +215,7 @@ public class SchoolApp extends JFrame {
 
         heading.setFont(new Font("Segoe UI", Font.BOLD, 28));
 
-        JPanel buttons = new JPanel(new GridLayout(9, 1, 15, 15));   
+        JPanel buttons = new JPanel(new GridLayout(10, 1, 12, 12));   
 
         JButton students = new JButton("Manage Students");
         JButton logout = new JButton("Logout");
@@ -311,7 +311,15 @@ teachers.addActionListener(e -> {
         });
 
         buttons.add(reports);
-        buttons.add(accounts); 		
+        buttons.add(accounts);
+
+        JButton backgroundTasks = new JButton("Background Tasks (Multithreading)");
+        backgroundTasks.addActionListener(e -> {
+            if (authenticated && currentSession != null && currentSession.isAdmin()) {
+                new BackgroundTasksDialog(this);
+            }
+        });
+        buttons.add(backgroundTasks);
         buttons.add(logout); 
 
         panel.add(heading, BorderLayout.NORTH);
