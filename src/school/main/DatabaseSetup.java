@@ -21,6 +21,17 @@ public class DatabaseSetup {
             """);
 
             statement.executeUpdate("""
+                CREATE TABLE IF NOT EXISTS classes (
+                    class_id VARCHAR(50) PRIMARY KEY,
+                    class_name VARCHAR(150) NOT NULL,
+                    department_id INTEGER,
+                    level INTEGER NOT NULL,
+                    FOREIGN KEY (department_id)
+                    REFERENCES departments(department_id)
+                )
+            """);
+
+            statement.executeUpdate("""
                 CREATE TABLE IF NOT EXISTS students (
                     student_id VARCHAR(50) PRIMARY KEY,
                     first_name VARCHAR(100) NOT NULL,
@@ -58,6 +69,17 @@ public class DatabaseSetup {
                     REFERENCES departments(department_id),
                     FOREIGN KEY (teacher_id)
                     REFERENCES teachers(teacher_id)
+                )
+            """);
+
+            statement.executeUpdate("""
+                CREATE TABLE IF NOT EXISTS examinations (
+                    exam_id VARCHAR(50) PRIMARY KEY,
+                    course_id VARCHAR(50) NOT NULL,
+                    exam_name VARCHAR(150) NOT NULL,
+                    exam_date VARCHAR(20) NOT NULL,
+                    FOREIGN KEY (course_id)
+                    REFERENCES courses(course_id)
                 )
             """);
 
@@ -143,7 +165,7 @@ public class DatabaseSetup {
             """);
 
             System.out.println("H2 database created successfully!");
-            System.out.println("All 10 database tables created.");
+            System.out.println("All 12 database tables created.");
             System.out.println("Database file: data\\school.mv.db");
 
         } catch (SQLException e) {

@@ -227,6 +227,9 @@ public class SchoolApp extends JFrame {
         JButton logout = new JButton("Logout");
 		JButton teachers = new JButton("Manage Teachers");
 		JButton courses = new JButton("Manage Courses"); 
+        JButton departments = new JButton("Manage Departments");
+        JButton classes = new JButton("Manage Classes");
+        JButton examinations = new JButton("Manage Examinations");
 		JButton results = new JButton("Manage Results");
 		JButton attendance = new JButton("Manage Attendance");
 JButton payments = new JButton("Manage Payments");
@@ -254,6 +257,24 @@ results.addActionListener(e -> {
     }
 
 }); 
+
+departments.addActionListener(e -> {
+    if (authenticated) {
+        new DepartmentManagementDialog(this);
+    }
+});
+
+classes.addActionListener(e -> {
+    if (authenticated) {
+        new ClassManagementDialog(this);
+    }
+});
+
+examinations.addActionListener(e -> {
+    if (authenticated) {
+        new ExaminationManagementDialog(this);
+    }
+});
 
 courses.addActionListener(e -> {
 
@@ -312,6 +333,9 @@ teachers.addActionListener(e -> {
         buttons.add(students);
 		buttons.add(teachers); 
 		buttons.add(courses); 
+        buttons.add(departments);
+        buttons.add(classes);
+        buttons.add(examinations);
 		buttons.add(results);
 		buttons.add(attendance);
 		buttons.add(payments);

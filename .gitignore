@@ -36,3 +36,8 @@ replay_pid*
 # H2 database files
 *.mv.db
 *.trace.db
+
+# Runtime-generated application output
+/logs/
+/backups/
+/reports/
