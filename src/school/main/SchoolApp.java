@@ -328,6 +328,14 @@ teachers.addActionListener(e -> {
             }
         });
         buttons.add(networkServices);
+
+        JButton restApi = new JButton("REST API Services");
+        restApi.addActionListener(e -> {
+            if (authenticated && currentSession != null && currentSession.isAdmin()) {
+                new RestApiDialog(this);
+            }
+        });
+        buttons.add(restApi);
         buttons.add(logout); 
 
         panel.add(heading, BorderLayout.NORTH);
