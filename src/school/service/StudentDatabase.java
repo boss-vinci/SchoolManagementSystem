@@ -1,5 +1,7 @@
 package school.service;
 
+import school.util.AppLogger;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.*;
@@ -19,10 +21,28 @@ public class StudentDatabase {
         try {
             Files.createDirectories(Path.of("data"));
         } catch (Exception e) {
+            AppLogger.error(
+                "DATABASE_ERROR",
+                "Could not create the data folder.",
+                e
+            );
             throw new SQLException("Could not create data folder.", e);
         }
 
-        return DriverManager.getConnection(databaseUrl(), USER, PASSWORD);
+        try {
+            return DriverManager.getConnection(
+                databaseUrl(),
+                USER,
+                PASSWORD
+            );
+        } catch (SQLException e) {
+            AppLogger.error(
+                "DATABASE_ERROR",
+                "Database connection failed.",
+                e
+            );
+            throw e;
+        }
     }
 
     public static int addDepartment(String name) throws SQLException {
@@ -131,6 +151,11 @@ public class StudentDatabase {
                 statement.setInt(5, departmentId);
                 statement.setInt(6, level);
                 statement.executeUpdate();
+
+                AppLogger.info(
+                    "STUDENT_REGISTERED",
+                    "Student registered through service: " + id
+                );
 
                 System.out.println("Student registered successfully.");
             }

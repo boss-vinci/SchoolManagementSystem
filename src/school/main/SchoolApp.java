@@ -2,7 +2,8 @@ package school.main;
 
 import school.service.AuthService;
 import school.service.StudentDatabase;
-import school.service.RoleAuthService; 
+import school.service.RoleAuthService;
+import school.util.AppLogger;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -48,6 +49,8 @@ public class SchoolApp extends JFrame {
 
         setVisible(true);
 
+        AppLogger.info("APPLICATION", "School Management System started.");
+
         try {
             if (!AuthService.hasAdmin()) {
                 setupAdmin();
@@ -92,6 +95,7 @@ public class SchoolApp extends JFrame {
             }
 
             AuthService.createAdmin(first);
+            AppLogger.info("ACCOUNT", "Administrator account created: admin");
 
             JOptionPane.showMessageDialog(
                 this,
@@ -276,6 +280,13 @@ teachers.addActionListener(e -> {
 
         logout.addActionListener(e -> {
 
+            if (currentSession != null) {
+                AppLogger.info(
+                    "LOGOUT",
+                    "User logged out: " + currentSession.getUsername()
+                );
+            }
+
             authenticated = false;
             currentSession = null;
 
@@ -336,6 +347,15 @@ teachers.addActionListener(e -> {
             }
         });
         buttons.add(restApi);
+
+        JButton systemLogs = new JButton("System Logs");
+        systemLogs.addActionListener(e -> {
+            if (authenticated && currentSession != null && currentSession.isAdmin()) {
+                new SystemLogsDialog(this);
+            }
+        });
+        buttons.add(systemLogs);
+
         buttons.add(logout); 
 
         panel.add(heading, BorderLayout.NORTH);
@@ -497,6 +517,11 @@ teachers.addActionListener(e -> {
                 statement.executeUpdate();
             }
 
+            AppLogger.info(
+                "STUDENT_REGISTERED",
+                "Student registered: " + id
+            );
+
             JOptionPane.showMessageDialog(
                 this,
                 "Student registered successfully."
@@ -641,6 +666,11 @@ teachers.addActionListener(e -> {
 
             refreshStudents();
 
+            AppLogger.info(
+                "STUDENT_DELETED",
+                "Student deleted: " + id
+            );
+
             JOptionPane.showMessageDialog(
                 this,
                 "Student deleted successfully."
@@ -652,6 +682,12 @@ teachers.addActionListener(e -> {
     }
 
     private void showError(Exception e) {
+
+        AppLogger.error(
+            "APPLICATION_ERROR",
+            e.getMessage() == null ? "Unexpected application error." : e.getMessage(),
+            e
+        );
 
         JOptionPane.showMessageDialog(
             this,

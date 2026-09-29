@@ -1,6 +1,7 @@
 package school.main;
 
 import school.service.StudentDatabase;
+import school.util.AppLogger;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -205,6 +206,12 @@ public class PaymentManagementDialog extends JDialog {
                 statement.executeUpdate();
             }
 
+            AppLogger.info(
+                "PAYMENT_RECORDED",
+                "Payment recorded for student " + studentId +
+                ": NGN " + amount
+            );
+
             JOptionPane.showMessageDialog(
                 this,
                 "Payment recorded successfully."
@@ -341,6 +348,12 @@ public class PaymentManagementDialog extends JDialog {
     }
 
     private void showError(Exception e) {
+
+        AppLogger.error(
+            "PAYMENT_ERROR",
+            e.getMessage() == null ? "Payment operation failed." : e.getMessage(),
+            e
+        );
 
         JOptionPane.showMessageDialog(
             this,

@@ -1,6 +1,7 @@
 package school.main;
 
 import school.service.StudentDatabase;
+import school.util.AppLogger;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -225,6 +226,13 @@ public class ResultsManagementDialog extends JDialog {
                 }
             }
 
+            AppLogger.info(
+                "RESULT_RECORDED",
+                "Result entered for student " + studentId +
+                " in course " + courseId +
+                " with score " + score
+            );
+
             JOptionPane.showMessageDialog(
                 this,
                 "Result recorded successfully."
@@ -341,6 +349,12 @@ public class ResultsManagementDialog extends JDialog {
                 }
             }
 
+            AppLogger.info(
+                "RESULT_UPDATED",
+                "Result updated: result ID " + resultId +
+                ", score " + score
+            );
+
             refreshResults();
 
             JOptionPane.showMessageDialog(
@@ -394,6 +408,12 @@ public class ResultsManagementDialog extends JDialog {
     }
 
     private void showError(Exception e) {
+
+        AppLogger.error(
+            "RESULT_ERROR",
+            e.getMessage() == null ? "Result operation failed." : e.getMessage(),
+            e
+        );
 
         JOptionPane.showMessageDialog(
             this,

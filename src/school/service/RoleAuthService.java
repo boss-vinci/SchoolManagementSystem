@@ -1,5 +1,7 @@
 package school.service;
 
+import school.util.AppLogger;
+
 import java.sql.*;
 import java.security.*;
 import java.util.Arrays;
@@ -59,11 +61,20 @@ public class RoleAuthService {
         }
     }
 
+    private static Session invalidLogin(String username) {
+        String safeUsername = username == null ? "<null>" : username.trim();
+        AppLogger.warning(
+            "INVALID_LOGIN",
+            "Invalid login attempt for username: " + safeUsername
+        );
+        return null;
+    }
+
     public static Session login(String username, char[] password)
             throws SQLException, GeneralSecurityException {
 
         if (username == null || password == null) {
-            return null;
+            return invalidLogin(username);
         }
 
         String sql = """
@@ -84,20 +95,20 @@ public class RoleAuthService {
             try (ResultSet result = statement.executeQuery()) {
 
                 if (!result.next()) {
-                    return null;
+                    return invalidLogin(username);
                 }
 
                 String stored = result.getString("password_hash");
 
                 if (stored == null) {
-                    return null;
+                    return invalidLogin(username);
                 }
 
                 String[] parts = stored.split("\\$", -1);
 
                 if (parts.length != 4 ||
                     !parts[0].equals("pbkdf2")) {
-                    return null;
+                    return invalidLogin(username);
                 }
 
                 int iterations;
@@ -105,11 +116,11 @@ public class RoleAuthService {
                 try {
                     iterations = Integer.parseInt(parts[1]);
                 } catch (NumberFormatException e) {
-                    return null;
+                    return invalidLogin(username);
                 }
 
                 if (iterations < ITERATIONS || iterations > 1000000) {
-                    return null;
+                    return invalidLogin(username);
                 }
 
                 byte[] salt;
@@ -119,7 +130,7 @@ public class RoleAuthService {
                     salt = Base64.getDecoder().decode(parts[2]);
                     expected = Base64.getDecoder().decode(parts[3]);
                 } catch (IllegalArgumentException e) {
-                    return null;
+                    return invalidLogin(username);
                 }
 
                 byte[] actual = hash(password, salt, iterations);
@@ -129,7 +140,7 @@ public class RoleAuthService {
                 Arrays.fill(actual, (byte) 0);
 
                 if (!valid) {
-                    return null;
+                    return invalidLogin(username);
                 }
 
                 String role = result.getString("role");
@@ -150,20 +161,28 @@ public class RoleAuthService {
                         break;
 
                     default:
-                        return null;
+                        return invalidLogin(username);
                 }
 
                 if ((role.equals("STUDENT") ||
                      role.equals("TEACHER")) &&
                     profileId == null) {
-                    return null;
+                    return invalidLogin(username);
                 }
 
-                return new Session(
+                Session session = new Session(
                     result.getString("username"),
                     role,
                     profileId
                 );
+
+                AppLogger.info(
+                    "LOGIN",
+                    "Authenticated user: " + session.getUsername() +
+                    " (" + session.getRole() + ")"
+                );
+
+                return session;
             }
         }
     }
@@ -320,6 +339,11 @@ public class RoleAuthService {
                 }
 
                 connection.commit();
+
+                AppLogger.info(
+                    "ACCOUNT",
+                    "Account created: " + username + " (" + role + ")"
+                );
 
             } catch (SQLException | RuntimeException e) {
 
